@@ -4,22 +4,21 @@ import com.cesarmarcos.petshop.entities.Usuario;
 import com.cesarmarcos.petshop.repository.UsuarioRepository;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
+import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.internal.operators.maybe.MaybeFromCallable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UsuarioServiceImpl implements  UsuarioService {
-
 
     //https://github.com/axellageraldinc/reactive-web-api/blob/master/src/main/java/com/axell/reactive/service/book/BookServiceImpl.java
 
@@ -27,28 +26,35 @@ public class UsuarioServiceImpl implements  UsuarioService {
 
     @Override
     public Single<List<Usuario>> list(int limit, int page) {
-        return Single.create(singleEmitter -> {
-            List<Usuario> usuarios = usuarioRepo.findAll(PageRequest.of(page, limit)).getContent();
-            singleEmitter.onSuccess(usuarios);
+        return Single.fromCallable(()->{
+            return usuarioRepo.findAll(PageRequest.of(page, limit)).getContent();
+        })
+        .map(usuarios->{
+            return usuarios.stream().collect(Collectors.toList());
+        })
+        .onErrorResumeNext(throwable -> {
+            return Single.error(new RuntimeException(""));
         });
     }
 
     @Override
     public Single<Usuario> addUser(Usuario usuario) {
+       return addUserRepo(usuario);
+    }
+
+    private Single<Usuario> addUserRepo(Usuario usuario){
         return Single.create(singleSubscriber ->{
-            Optional<Usuario> usuarioBD = usuarioRepo.findById(usuario.getId());
-            if(usuarioBD.isPresent()){
-                singleSubscriber.onError(new EntityNotFoundException());
+            if(Objects.nonNull(usuario.getId())){
+                Optional<Usuario> usuarioBD = usuarioRepo.findById(usuario.getId());
+                if(!usuarioBD.isPresent()){
+                    singleSubscriber.onError(new EntityNotFoundException());
+                }
             }else{
-                Usuario usuarioNew = usuarioRepo.save(addUsuario(usuario));
+                usuario.setId(UUID.randomUUID().toString());
+                Usuario usuarioNew = usuarioRepo.save(usuario);
                 singleSubscriber.onSuccess(usuarioNew);
             }
         });
-    }
-
-    private Usuario addUsuario(Usuario usuario){
-        usuario.setId(UUID.randomUUID().toString());
-        return usuario;
     }
 
     private Single<Usuario> saveUsuarioToRepository(Usuario usuario){
@@ -65,16 +71,16 @@ public class UsuarioServiceImpl implements  UsuarioService {
 
     @Override
     public Single<Usuario> getDetails(String id) {
-        //return usuarioRepo.findByUsuarioId(id)
-        //            .switchIfEmpty(Single.error(new NoSuchElementException("Usuario no encontrado")));
-        return Single.create(emmiter -> {
+        return usuarioRepo.findByUsuarioId(id)
+                   .switchIfEmpty(Single.error(new EntityNotFoundException("Usuario no encontrado")));
+        /*return Single.create(emmiter -> {
             Optional<Usuario> usuarioBd = usuarioRepo.findById(id);
             if(usuarioBd.isPresent()){
                 emmiter.onSuccess(usuarioBd.get());
             }else{
                 emmiter.onError(new EntityNotFoundException());
             }
-        });
+        });*/
     }
 
     @Override
@@ -86,7 +92,11 @@ public class UsuarioServiceImpl implements  UsuarioService {
         return Completable.create(completableEmitter -> {
             Usuario usuarioBD  = usuarioRepo.findById(id).orElseThrow(EntityNotFoundException::new);
             usuarioBD.setUsuario(usuario.getUsuario());
+            usuarioBD.setPassword(usuario.getPassword());
+            usuarioBD.setEstado(usuario.getEstado());
             usuarioBD.setRol(usuario.getRol());
+            usuarioRepo.save(usuarioBD);
+
             completableEmitter.onComplete();
 
             /*if(!usuarioBD.isPresent()){

@@ -24,8 +24,6 @@ public class UsuarioController {
         return usuarioService.list(limit, page)
                 .subscribeOn(Schedulers.io())
                 .map(ResponseEntity::ok);
-
-
     }
 
     @PostMapping
@@ -46,11 +44,10 @@ public class UsuarioController {
     }
 
     @PutMapping("{id}")
-    public Single<ResponseEntity<Void>> update(@PathVariable String id, Usuario usuario){
+    public Single<ResponseEntity<Void>> update(@PathVariable String id,@RequestBody Usuario usuario){
         return usuarioService.update(id,usuario)
                 .subscribeOn(Schedulers.io())
                 .andThen(Single.fromCallable(() -> ResponseEntity.ok().<Void>build()));
-
     }
 
     @DeleteMapping("{id}")
