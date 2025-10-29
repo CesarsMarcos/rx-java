@@ -1,13 +1,17 @@
 package com.cesarmarcos.petshop.controller;
 
 import com.cesarmarcos.petshop.entities.Usuario;
+import com.cesarmarcos.petshop.entities.dto.UsuarioDTO;
 import com.cesarmarcos.petshop.services.UsuarioService;
-import io.reactivex.Single;
-import io.reactivex.schedulers.Schedulers;
+
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.persistence.EntityNotFoundException;
+import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
 
@@ -20,14 +24,14 @@ public class UsuarioController {
 
     @GetMapping
     public Single<ResponseEntity<List<Usuario>>> list(@RequestParam(value = "limit", defaultValue = "5") int limit,
-                                                    @RequestParam(value = "page", defaultValue = "0") int page){
+                                                      @RequestParam(value = "page", defaultValue = "0") int page){
         return usuarioService.list(limit, page)
                 .subscribeOn(Schedulers.io())
                 .map(ResponseEntity::ok);
     }
 
     @PostMapping
-    public Single<ResponseEntity<?>> save(@RequestBody Usuario usuario) {
+    public Single<ResponseEntity<Void>> save(@Valid  @RequestBody UsuarioDTO usuario) {
         return usuarioService
                 .addUser(usuario)
                 .subscribeOn(Schedulers.io())
@@ -37,10 +41,9 @@ public class UsuarioController {
     }
 
     @GetMapping("details/{id}")
-    public Single<ResponseEntity<Usuario>> details(@PathVariable String id){
-         return usuarioService.getDetails(id)
-                 .subscribeOn(Schedulers.io())
-                 .map(ResponseEntity::ok);
+    public Single<ResponseEntity<UsuarioDTO>> details(@PathVariable String id){
+        return usuarioService.getDetails(id)
+                .map(ResponseEntity::ok);
     }
 
     @PutMapping("{id}")

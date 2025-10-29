@@ -1,7 +1,5 @@
-package com.cesarmarcos.petshop.controller;
+package com.cesarmarcos.petshop.exception;
 
-import com.cesarmarcos.petshop.utils.ErrorCode;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -9,16 +7,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import javax.persistence.EntityNotFoundException;
 
-
 @RestControllerAdvice
-public class ExceptionRestController {
+public class GlobalExceptionHandler {
+
   @ExceptionHandler(EntityNotFoundException.class)
-  public ResponseEntity<?> handleEntityNotFoundException() {
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorCode.ENTITY_NOT_FOUND);
+  public ResponseEntity<String> handleEntityNotFound(EntityNotFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
   }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<String> handleGenericException(Exception ex) {
-
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor");
   }
 }
