@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import javax.persistence.EntityNotFoundException;
 
+@Log4j2
 
 @RestControllerAdvice
 public class ExceptionRestController {
@@ -18,6 +19,7 @@ public class ExceptionRestController {
   }
   @ExceptionHandler(Exception.class)
   public ResponseEntity<String> handleGenericException(Exception ex) {
+    log.error ("Error inesperado: {}", ex.getMessage(), ex);
 
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno del servidor");
   }
